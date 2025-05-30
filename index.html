@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Resume Roast 🔥 (Fixed PDF)</title>
-  <!-- Using pdf.js for text extraction -->
+  <title>Brutal Resume Roaster 🔥</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
   <style>
     body {
@@ -13,11 +12,15 @@
       color: #333;
       line-height: 1.6;
       padding: 20px;
+      margin: 0;
     }
     .container {
       max-width: 800px;
       margin: 0 auto;
       text-align: center;
+    }
+    h1 {
+      color: #d32f2f;
     }
     .upload-box {
       border: 3px dashed #d32f2f;
@@ -25,6 +28,10 @@
       margin: 30px 0;
       cursor: pointer;
       transition: 0.3s;
+      background: white;
+    }
+    .upload-box:hover {
+      background: #ffebee;
     }
     #roastResult {
       background: white;
@@ -33,6 +40,7 @@
       box-shadow: 0 4px 6px rgba(0,0,0,0.1);
       text-align: left;
       display: none;
+      margin-top: 20px;
     }
     button {
       background: #d32f2f;
@@ -42,17 +50,38 @@
       margin-top: 20px;
       cursor: pointer;
       border-radius: 4px;
+      font-weight: bold;
+    }
+    button:hover {
+      background: #b71c1c;
+    }
+    .dragover {
+      background: #ffcdd2 !important;
+    }
+    ul {
+      padding-left: 20px;
+    }
+    li {
+      margin-bottom: 8px;
+    }
+    .disclaimer {
+      font-size: 0.9em;
+      color: #666;
+      margin-top: 40px;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Local AI Resume Roast 🔥</h1>
-    <p>No API keys - everything happens in your browser</p>
+    <h1>Brutal Resume Roaster 🔥</h1>
+    <p>Get <em>painfully honest</em> feedback to improve your resume</p>
     
     <div class="upload-box" id="dropZone">
-      <input type="file" id="resumeUpload" accept=".pdf,.txt">
-      <p>📁 Choose PDF or Text File</p>
+      <input type="file" id="resumeUpload" accept=".pdf,.txt,.docx">
+      <label for="resumeUpload">
+        <p>📁 <strong>Drag & drop your resume</strong></p>
+        <p><small>(PDF, DOCX, or TXT)</small></p>
+      </label>
     </div>
 
     <div id="roastResult">
@@ -73,48 +102,115 @@
     const roastResult = document.getElementById('roastResult');
     const roastText = document.getElementById('roastText');
     const copyBtn = document.getElementById('copyBtn');
+    const dropZone = document.getElementById('dropZone');
 
-    // Simple ML model to analyze text (pretrained rules)
+    // Resume Analyzer with expanded rules
     class ResumeAnalyzer {
       constructor() {
-        this.badWords = ["responsible for", "duties included", "team player"];
-        this.goodWords = ["increased by", "reduced costs", "optimized"];
+        this.badPhrases = [
+          "responsible for", 
+          "duties included", 
+          "team player",
+          "references available",
+          "worked on",
+          "helped with",
+          "assisted in",
+          "proficient in",
+          "experienced in"
+        ];
+        
+        this.vagueWords = [
+          "various",
+          "many",
+          "several",
+          "extensive",
+          "excellent",
+          "strong",
+          "good",
+          "great"
+        ];
+        
+        this.suggestions = {
+          passiveLanguage: "Use action verbs like <em>'Led', 'Created', 'Increased'</em> instead",
+          vagueTerms: "Add numbers/metrics (e.g., <em>'Increased sales by 30%'</em>)",
+          tooLong: "Keep under 700 words (ATS scanners prefer concise resumes)",
+          noEmail: "Add a professional email address",
+          noNumbers: "Include quantifiable achievements (e.g., <em>'Reduced costs by $50K'</em>)",
+          noSkills: "Focus on skills relevant to the job (remove MS Office unless specified)"
+        };
       }
 
       analyze(text) {
+        const lowerText = text.toLowerCase();
         const issues = [];
-        const suggestions = [];
+        const suggestions = new Set();
         
-        // Check for bad phrases
-        this.badWords.forEach(phrase => {
-          if (text.toLowerCase().includes(phrase)) {
-            issues.push(`🚫 <strong>Avoid passive language like "${phrase}"</strong>`);
-            suggestions.push(`<em>→ Replace with action verbs (e.g., "Led", "Built")</em>`);
+        // 1. Check for passive language
+        this.badPhrases.forEach(phrase => {
+          if (lowerText.includes(phrase)) {
+            issues.push(`🚫 <strong>Passive phrase:</strong> "${phrase}"`);
+            suggestions.add(this.suggestions.passiveLanguage);
           }
         });
-
-        // Check length
-        const wordCount = text.split(/\s+/).length;
-        if (wordCount > 800) issues.push(`📏 <strong>Too long (${wordCount} words)</strong>`);
         
-        // Check contact info
-        if (!text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)) {
-          issues.push(`📧 <strong>Missing email address</strong>`);
+        // 2. Check for vague terms
+        this.vagueWords.forEach(word => {
+          if (lowerText.includes(word)) {
+            issues.push(`📝 <strong>Vague term:</strong> "${word}"`);
+            suggestions.add(this.suggestions.vagueTerms);
+          }
+        });
+        
+        // 3. Check length
+        const wordCount = text.split(/\s+/).length;
+        if (wordCount > 700) {
+          issues.push(`📏 <strong>Too long:</strong> ${wordCount} words`);
+          suggestions.add(this.suggestions.tooLong);
         }
-
-        // Generate roast
-        let roast = "<h3>Major Issues:</h3><ul>";
-        issues.forEach(issue => roast += `<li>${issue}</li>`);
-        roast += "</ul><h3>Suggestions:</h3><ul>";
+        
+        // 4. Check for numbers (achievements)
+        if (!text.match(/\d+/)) {
+          issues.push(`🔢 <strong>Missing numbers:</strong> No quantifiable achievements`);
+          suggestions.add(this.suggestions.noNumbers);
+        }
+        
+        // 5. Check contact info
+        if (!lowerText.match(/[\w.%+-]+@[\w.-]+\.[\w]{2,}/)) {
+          issues.push(`📧 <strong>Missing email</strong>`);
+          suggestions.add(this.suggestions.noEmail);
+        }
+        
+        // 6. Check for skills section
+        if (!lowerText.includes("skills") && !lowerText.includes("technical")) {
+          issues.push(`🛠 <strong>No skills section</strong>`);
+          suggestions.add(this.suggestions.noSkills);
+        }
+        
+        // Generate the roast output
+        let roast = '';
+        
+        if (issues.length > 0) {
+          roast += `<h3>🚨 Major Issues:</h3><ul>`;
+          issues.forEach(issue => roast += `<li>${issue}</li>`);
+          roast += `</ul>`;
+        } else {
+          roast += `<p>⭐ <strong>No major issues found! But let's make it perfect:</strong></p>`;
+        }
+        
+        roast += `<h3>💡 Suggestions:</h3><ul>`;
         suggestions.forEach(sug => roast += `<li>${sug}</li>`);
+        roast += `</ul>`;
         
         // Add random funny roast
         const roasts = [
           "Your resume is so vague, even a fortune cookie gave up",
           "This looks like it was written by ChatGPT's boring cousin",
-          "I've seen grocery lists with more compelling content"
+          "I've seen grocery lists with more compelling content",
+          "Your resume has the personality of a fax cover sheet",
+          "This would put a hiring manager to sleep",
+          "More clichés than a motivational poster"
         ];
-        roast += `<p>💀 <strong>${roasts[Math.floor(Math.random() * roasts.length)]}</strong></p>`;
+        roast += `<p style="margin-top:20px;">💀 <strong>${roasts[Math.floor(Math.random() * roasts.length)]}</strong></p>`;
         
         return roast;
       }
@@ -128,18 +224,18 @@
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const content = await page.getTextContent();
-        text += content.items.map(item => item.str).join(' ');
+        text += content.items.map(item => item.str).join(' ') + '\n';
       }
       
       return text;
     }
 
     // Process uploaded file
-    fileInput.addEventListener('change', async () => {
+    async function processResume() {
       const file = fileInput.files[0];
       if (!file) return;
 
-      roastText.innerHTML = "🔍 Analyzing your resume...";
+      roastText.innerHTML = "<p>🔍 Analyzing your resume...</p>";
       roastResult.style.display = "block";
 
       try {
@@ -147,6 +243,9 @@
         
         if (file.type === "application/pdf") {
           text = await extractTextFromPDF(file);
+        } else if (file.name.endsWith('.docx')) {
+          roastText.innerHTML = "<p>❌ DOCX support coming soon! Try PDF or TXT.</p>";
+          return;
         } else {
           // Plain text
           text = await file.text();
@@ -156,28 +255,36 @@
         roastText.innerHTML = analyzer.analyze(text);
         
       } catch (error) {
-        roastText.innerHTML = `Error: ${error.message}`;
+        roastText.innerHTML = `<p>❌ Error: ${error.message}</p>`;
       }
-    });
+    }
 
-    // Copy functionality
+    // Event listeners
+    fileInput.addEventListener('change', processResume);
+    
     copyBtn.addEventListener('click', () => {
       navigator.clipboard.writeText(roastText.innerText)
-        .then(() => alert('Roast copied!'))
+        .then(() => alert('Roast copied to clipboard!'))
         .catch(err => console.error(err));
     });
 
     // Drag/drop handlers
-    document.getElementById('dropZone').addEventListener('dragover', (e) => {
+    dropZone.addEventListener('dragover', (e) => {
       e.preventDefault();
-      e.currentTarget.style.background = "#ffcdd2";
+      dropZone.classList.add('dragover');
     });
 
-    document.getElementById('dropZone').addEventListener('drop', (e) => {
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
       e.preventDefault();
-      e.currentTarget.style.background = "";
-      fileInput.files = e.dataTransfer.files;
-      fileInput.dispatchEvent(new Event('change'));
+      dropZone.classList.remove('dragover');
+      if (e.dataTransfer.files.length) {
+        fileInput.files = e.dataTransfer.files;
+        processResume();
+      }
     });
   </script>
 </body>
