@@ -4,31 +4,170 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI Resume Roast 🔥</title>
-  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.18.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background: #ffefef;
+      color: #333;
+      line-height: 1.6;
+      padding: 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      text-align: center;
+    }
+    .upload-box {
+      border: 3px dashed #d32f2f;
+      padding: 40px;
+      margin: 30px 0;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    #roastResult {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      text-align: left;
+      display: none;
+    }
+    button {
+      background: #d32f2f;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      margin-top: 20px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+  </style>
 </head>
 <body>
   <div class="container">
-    <h1>Upload Your Resume for a Brutal AI Roast</h1>
-    <p>Get <em>painfully honest</em> feedback to improve your job chances</p>
+    <h1>Local AI Resume Roast 🔥</h1>
+    <p>No API keys - everything happens in your browser</p>
     
     <div class="upload-box" id="dropZone">
-      <input type="file" id="resumeUpload" accept=".pdf,.docx,.txt">
-      <label for="resumeUpload">📁 Choose File or Drag Here</label>
+      <input type="file" id="resumeUpload" accept=".pdf,.txt">
+      <p>📁 Choose PDF or Text File</p>
     </div>
 
-    <div class="roast-result hidden" id="roastResult">
+    <div id="roastResult">
       <h2>🔥 Your Resume Roast:</h2>
       <div id="roastText"></div>
       <button id="copyBtn">Copy Roast</button>
     </div>
 
-    <div class="disclaimer">
-      <p>Note: This uses OpenAI's API. Your resume text is processed but not stored.</p>
-    </div>
+    <p class="disclaimer">Note: This runs completely in your browser - no data is sent to servers.</p>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.4.120/build/pdf.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/openai@4.28.0/dist/openai.browser.min.js"></script>
-  <script src="script.js"></script>
+  <script>
+    // DOM Elements
+    const fileInput = document.getElementById('resumeUpload');
+    const roastResult = document.getElementById('roastResult');
+    const roastText = document.getElementById('roastText');
+    const copyBtn = document.getElementById('copyBtn');
+
+    // Simple ML model to analyze text (pretrained rules)
+    class ResumeAnalyzer {
+      constructor() {
+        this.badWords = ["responsible for", "duties included", "team player"];
+        this.goodWords = ["increased by", "reduced costs", "optimized"];
+      }
+
+      analyze(text) {
+        const issues = [];
+        const suggestions = [];
+        
+        // Check for bad phrases
+        this.badWords.forEach(phrase => {
+          if (text.toLowerCase().includes(phrase)) {
+            issues.push(`🚫 <strong>Avoid passive language like "${phrase}"</strong>`);
+            suggestions.push(`<em>→ Replace with action verbs (e.g., "Led", "Built")</em>`);
+          }
+        });
+
+        // Check length
+        const wordCount = text.split(/\s+/).length;
+        if (wordCount > 800) issues.push(`📏 <strong>Too long (${wordCount} words)</strong>`);
+        
+        // Check contact info
+        if (!text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)) {
+          issues.push(`📧 <strong>Missing email address</strong>`);
+        }
+
+        // Generate roast
+        let roast = "<h3>Major Issues:</h3><ul>";
+        issues.forEach(issue => roast += `<li>${issue}</li>`);
+        roast += "</ul><h3>Suggestions:</h3><ul>";
+        suggestions.forEach(sug => roast += `<li>${sug}</li>`);
+        
+        // Add random funny roast
+        const roasts = [
+          "Your resume is so vague, even a fortune cookie gave up",
+          "This looks like it was written by ChatGPT's boring cousin",
+          "I've seen grocery lists with more compelling content"
+        ];
+        roast += `<p>💀 <strong>${roasts[Math.floor(Math.random() * roasts.length)]}</strong></p>`;
+        
+        return roast;
+      }
+    }
+
+    // Process uploaded file
+    fileInput.addEventListener('change', async () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+
+      roastText.innerHTML = "🔍 Analyzing your resume...";
+      roastResult.style.display = "block";
+
+      try {
+        let text = "";
+        
+        if (file.type === "application/pdf") {
+          // PDF text extraction (simplified)
+          const pdfBytes = await file.arrayBuffer();
+          const pdfDoc = await PDFLib.PDFDocument.load(pdfBytes);
+          for (let i = 0; i < pdfDoc.getPageCount(); i++) {
+            const page = pdfDoc.getPage(i);
+            text += page.getTextContent().items.map(item => item.str).join(" ");
+          }
+        } else {
+          // Plain text
+          text = await file.text();
+        }
+
+        const analyzer = new ResumeAnalyzer();
+        roastText.innerHTML = analyzer.analyze(text);
+        
+      } catch (error) {
+        roastText.innerHTML = `Error: ${error.message}`;
+      }
+    });
+
+    // Copy functionality
+    copyBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(roastText.innerText)
+        .then(() => alert('Roast copied!'))
+        .catch(err => console.error(err));
+    });
+
+    // Drag/drop handlers
+    document.getElementById('dropZone').addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.currentTarget.style.background = "#ffcdd2";
+    });
+
+    document.getElementById('dropZone').addEventListener('drop', (e) => {
+      e.preventDefault();
+      e.currentTarget.style.background = "";
+      fileInput.files = e.dataTransfer.files;
+      fileInput.dispatchEvent(new Event('change'));
+    });
+  </script>
 </body>
 </html>
