@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Resume Roast 🔥</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Upload Your Resume for a Brutal AI Roast</h1>
+    <p>Get <em>painfully honest</em> feedback to improve your job chances</p>
+    
+    <div class="upload-box" id="dropZone">
+      <input type="file" id="resumeUpload" accept=".pdf,.docx,.txt">
+      <label for="resumeUpload">📁 Choose File or Drag Here</label>
+    </div>
+
+    <div class="roast-result hidden" id="roastResult">
+      <h2>🔥 Your Resume Roast:</h2>
+      <div id="roastText"></div>
+      <button id="copyBtn">Copy Roast</button>
+    </div>
+
+    <div class="disclaimer">
+      <p>Note: This uses OpenAI's API. Your resume text is processed but not stored.</p>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.4.120/build/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/openai@4.28.0/dist/openai.browser.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
